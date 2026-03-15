@@ -1,0 +1,51 @@
+/* Cooper font family – single family with multiple weights/styles */
+
+@font-face {
+  font-family: "Cooper";
+  src: url("../fonts/cooper/cooper-regular.woff2") format("woff2"),
+    url("../fonts/cooper/cooper-regular.woff") format("woff"),
+    url("../fonts/cooper/cooper-regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Cooper";
+  src: url("../fonts/cooper/cooper-bold.woff2") format("woff2"),
+    url("../fonts/cooper/cooper-bold.woff") format("woff"),
+    url("../fonts/cooper/cooper-bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Cooper";
+  src: url("../fonts/cooper/cooper-light-italic.woff2") format("woff2"),
+    url("../fonts/cooper/cooper-light-italic.woff") format("woff"),
+    url("../fonts/cooper/cooper-light-italic.ttf") format("truetype");
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Cooper";
+  src: url("../fonts/cooper/cooper-medium-italic.woff2") format("woff2"),
+    url("../fonts/cooper/cooper-medium-italic.woff") format("woff"),
+    url("../fonts/cooper/cooper-medium-italic.ttf") format("truetype");
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Cooper";
+  src: url("../fonts/cooper/cooper-blk-outline.woff2") format("woff2"),
+    url("../fonts/cooper/cooper-blk-outline.woff") format("woff"),
+    url("../fonts/cooper/cooper-blk-outline.ttf") format("truetype");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}

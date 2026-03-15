@@ -1,0 +1,325 @@
+import type { NextPageWithLayout } from '../../_app';
+import Head from 'next/head';
+import MainLayout from '@/layouts/MainLayout';
+import { useRouter } from 'next/router';
+import { useState, useCallback } from 'react';
+import { useForm } from 'react-hook-form';
+import { useQuery } from '@tanstack/react-query';
+import Image from 'next/image';
+import { motion, AnimatePresence } from 'motion/react';
+import { Icon } from '@itsyouagency/ui';
+import type { BookableEvent, TicketTier } from '@/constants/events';
+import { buildShopifyCheckoutUrl } from '@/utils/shopify';
+import { fetchShopifyProducts, type ShopifyProduct } from '@/utils/shopifyStorefront';
+import TicketIcon from '@/assets/svg/ticket.svg';
+
+const SHOPIFY_STORE = process.env.NEXT_PUBLIC_SHOPIFY_STORE || '';
+
+type FormData = { name: string; email: string };
+
+function mapProductToEvent(product: ShopifyProduct): BookableEvent {
+  return {
+    id: product.id,
+    handle: product.handle,
+    name: product.title,
+    date: product.metafields?.time?.value ?? '—',
+    location: product.metafields?.location?.value ?? 'Düsseldorf',
+    description: product.description ?? null,
+    image: product.featuredImage?.url ?? null,
+    ticketTiers: product.variants
+      .filter((v) => v.availableForSale)
+      .map((v) => ({
+        id: v.id,
+        name: v.title,
+        price: parseFloat(v.price),
+        shopifyVariantId: v.legacyResourceId,
+        benefits: v.benefits,
+      })),
+  };
+}
+
+async function fetchEvents(): Promise<BookableEvent[]> {
+  const products = await fetchShopifyProducts();
+  return products
+    .filter((p) => p.variants?.some((v) => v.availableForSale))
+    .map(mapProductToEvent);
+}
+
+const BookEventTickets: NextPageWithLayout = () => {
+  const router = useRouter();
+  const { eventId } = router.query;
+  const [selectedTier, setSelectedTier] = useState<TicketTier | null>(null);
+
+  const { data: events = [], isLoading, error } = useQuery({
+    queryKey: ['shopify-products'],
+    queryFn: fetchEvents,
+  });
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+  } = useForm<FormData>();
+
+  const closeSidebar = useCallback(() => setSelectedTier(null), []);
+
+  const selectedEvent = events.find((e) => e.handle === eventId);
+
+  if (!router.isReady || isLoading) {
+    return (
+      <section className="pt-24 pb-16 md:pt-28 md:pb-24 px-6">
+        <div className="max-w-2xl mx-auto text-center py-12 text-gray-500">
+          Loading…
+        </div>
+      </section>
+    );
+  }
+
+  if (error || !selectedEvent) {
+    return (
+      <section className="pt-24 pb-16 md:pt-28 md:pb-24 px-6">
+        <div className="max-w-2xl mx-auto text-center py-12">
+          <p className="text-gray-600">Event not found.</p>
+        </div>
+      </section>
+    );
+  }
+
+  const selectTier = (tier: TicketTier) => {
+    setSelectedTier(tier);
+    reset();
+  };
+
+  const onSubmit = async (data: FormData) => {
+    if (!selectedTier || !SHOPIFY_STORE) return;
+    const url = buildShopifyCheckoutUrl(SHOPIFY_STORE, selectedTier.shopifyVariantId, 1, {
+      email: data.email,
+    });
+    window.location.href = url;
+  };
+
+  return (
+    <>
+      <Head>
+        <title>{selectedEvent.name} — Book — NOMADE. PRESTIGE</title>
+        <meta name="description" content={`Book tickets for ${selectedEvent.name} at NOMADE. PRESTIGE.`} />
+      </Head>
+
+      <section className="pt-0 pb-16 md:pb-24 px-6 overflow-x-hidden">
+        <div className="max-w-2xl mx-auto">
+          {selectedEvent.image && (
+            <div className="relative aspect-[5/2] w-screen max-w-none left-1/2 -translate-x-1/2 rounded-none mb-8 overflow-hidden">
+              <Image
+                src={selectedEvent.image}
+                alt={selectedEvent.name}
+                fill
+                className="object-cover object-top"
+                sizes="100vw"
+              />
+              <div className="absolute bottom-0 left-0 right-0 bg-light/90">
+                <div className="max-w-2xl mx-auto px-6 py-6">
+                  <p className="text-xs font-medium uppercase tracking-[0.2em] text-primary">
+                    {selectedEvent.date} · {selectedEvent.location}
+                  </p>
+                  <h2 className="font-cooper text-2xl md:text-3xl font-bold text-gray-900 mt-1">
+                    {selectedEvent.name}
+                  </h2>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {selectedEvent.description && (
+            <div className="mb-8">
+              <p className="text-gray-600 text-sm max-w-xl">
+                {selectedEvent.description}
+              </p>
+            </div>
+          )}
+
+          <h3 className="text-xs font-medium uppercase tracking-[0.2em] text-gray-500 mb-4">
+            Select ticket tier
+          </h3>
+          <div className="space-y-4">
+            {selectedEvent.ticketTiers.map((tier) => {
+              const hasLeftAccent = /basic|member|exclusive|premium|vip/i.test(tier.name);
+              const isExclusive = /exclusive|premium|vip/i.test(tier.name);
+              const isRecommended = /member/i.test(tier.name);
+              return (
+                <div key={tier.id} className="flex gap-4 items-stretch">
+                  <div className="flex items-center justify-center w-12 shrink-0 text-primary">
+                    <TicketIcon className="w-8 h-8" aria-hidden />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => selectTier(tier)}
+                    className={`relative flex-1 overflow-hidden rounded-xl border-2 transition-all duration-300 group text-left focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-offset-2 ${
+                    isExclusive
+                      ? 'border-secondary bg-gradient-to-br from-secondary/15 to-secondary/5 shadow-lg shadow-secondary/10 hover:shadow-xl hover:shadow-secondary/15 hover:border-secondary/90'
+                      : 'border-gray-200 bg-white hover:border-primary hover:shadow-md hover:shadow-primary/10'
+                  }`}
+                >
+                  {hasLeftAccent && (
+                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${isExclusive ? 'bg-secondary' : 'bg-primary'}`} aria-hidden />
+                  )}
+                  <div className={`flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 ${hasLeftAccent ? 'p-6 pl-7' : 'p-6'}`}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-3">
+                        <span className={`font-cooper text-lg font-bold transition-colors ${
+                          isExclusive ? 'text-secondary' : 'text-gray-900 group-hover:text-primary'
+                        }`}>
+                          {tier.name}
+                        </span>
+                        {isRecommended && (
+                          <span className="inline-flex items-center text-[10px] uppercase tracking-[0.15em] font-semibold text-primary bg-primary/15 px-2.5 py-1 rounded-md">
+                            Recommended
+                          </span>
+                        )}
+                      </div>
+                      {tier.benefits && tier.benefits.length > 0 && (
+                        <ul className="space-y-2">
+                          {tier.benefits.map((b, i) => (
+                            <li key={i} className={`flex items-center gap-3 text-sm ${hasLeftAccent ? 'text-gray-700' : 'text-gray-600'}`}>
+                              <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" aria-hidden />
+                              <span>{b}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4 shrink-0">
+                      <span className={`font-cooper font-bold ${isExclusive ? 'text-secondary text-2xl' : hasLeftAccent ? 'text-primary text-2xl' : 'text-primary text-xl'}`}>
+                        €{tier.price}
+                      </span>
+                      <span className={`text-xs uppercase tracking-widest transition-colors ${
+                        isExclusive ? 'text-secondary/80 group-hover:text-secondary' : hasLeftAccent ? 'text-primary/80 group-hover:text-primary' : 'text-gray-400 group-hover:text-primary'
+                      }`}>
+                        Select →
+                      </span>
+                    </div>
+                  </div>
+                </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Checkout sidebar */}
+      <AnimatePresence>
+        {selectedTier && selectedEvent && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-black/40 z-40"
+              onClick={closeSidebar}
+              aria-hidden
+            />
+            <motion.aside
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'tween', duration: 0.3 }}
+              className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-light border-l border-gray-200 shadow-xl z-50 flex flex-col overflow-hidden"
+              aria-modal
+              aria-labelledby="checkout-sidebar-title"
+            >
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 id="checkout-sidebar-title" className="font-cooper text-lg font-bold text-primary">
+                Checkout
+              </h2>
+              <button
+                type="button"
+                onClick={closeSidebar}
+                className="p-2 -m-2 text-gray-500 hover:text-primary transition-colors"
+                aria-label="Close"
+              >
+                <Icon name="Close" size={24} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="mb-6 p-6 rounded-xl border-2 border-primary/20 bg-white">
+                <div className="flex items-center gap-2 mb-2">
+                  <TicketIcon className="w-5 h-5 text-primary shrink-0" aria-hidden />
+                  <p className="text-xs uppercase tracking-widest text-gray-500">{selectedEvent.name}</p>
+                </div>
+                <p className="font-cooper text-xl font-bold text-primary mt-1">
+                  {selectedTier.name} — €{selectedTier.price}
+                </p>
+                {selectedTier.benefits && selectedTier.benefits.length > 0 && (
+                  <ul className="mt-3 space-y-2">
+                    {selectedTier.benefits.map((b, i) => (
+                      <li key={i} className="flex items-center gap-3 text-sm text-gray-600">
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" aria-hidden />
+                        <span>{b}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                <div>
+                  <label htmlFor="sidebar-name" className="block text-sm font-medium text-gray-700 mb-1">
+                    Name *
+                  </label>
+                  <input
+                    id="sidebar-name"
+                    type="text"
+                    {...register('name', { required: 'Name is required' })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
+                    placeholder="Your name"
+                  />
+                  {errors.name && (
+                    <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+                  )}
+                </div>
+                <div>
+                  <label htmlFor="sidebar-email" className="block text-sm font-medium text-gray-700 mb-1">
+                    E-Mail *
+                  </label>
+                  <input
+                    id="sidebar-email"
+                    type="email"
+                    {...register('email', {
+                      required: 'Email is required',
+                      pattern: {
+                        value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                        message: 'Invalid email',
+                      },
+                    })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
+                    placeholder="your@email.com"
+                  />
+                  {errors.email && (
+                    <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                  )}
+                </div>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full py-4 bg-primary text-light font-medium uppercase tracking-widest text-sm hover:bg-primary/90 transition-colors disabled:opacity-70"
+                >
+                  {isSubmitting ? 'Redirecting…' : 'Proceed to checkout'}
+                </button>
+              </form>
+              <p className="text-center text-gray-500 text-xs mt-4">
+                You will be redirected to our secure Shopify checkout to complete payment.
+              </p>
+            </div>
+          </motion.aside>
+        </>
+        )}
+      </AnimatePresence>
+    </>
+  );
+};
+
+BookEventTickets.getLayout = (page) => <MainLayout>{page}</MainLayout>;
+
+export default BookEventTickets;
