@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import Image from 'next/image';
 import type { BookableEvent } from '@/constants/events';
 import { fetchShopifyProducts, type ShopifyProduct } from '@/utils/shopifyStorefront';
+import TicketIcon from '@/assets/svg/ticket.svg';
 
 function mapProductToEvent(product: ShopifyProduct): BookableEvent {
   return {
@@ -79,11 +80,16 @@ const BookIndex: NextPageWithLayout = () => {
 
           {!isLoading && !error && (
             <div className="space-y-4">
-              <h2 className="text-sm font-medium uppercase tracking-widest text-gray-500 mb-4">
+              <h2 className="flex items-center gap-2 text-sm font-medium uppercase tracking-widest text-gray-500 mb-4">
+                <TicketIcon className="w-5 h-5 text-primary shrink-0" aria-hidden />
                 Select event
               </h2>
               {events.length === 0 ? (
-                <p className="text-center text-gray-500 py-8">No events available at the moment.</p>
+                <div className="flex flex-col items-center justify-center py-16 px-6 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50/50">
+                  <TicketIcon className="w-16 h-16 text-gray-300 mb-4" aria-hidden />
+                  <p className="text-gray-500 text-center font-medium">No events available at the moment.</p>
+                  <p className="text-gray-400 text-sm text-center mt-1">Check back soon for upcoming experiences.</p>
+                </div>
               ) : (
                 events.map((event) => (
                   <Link
