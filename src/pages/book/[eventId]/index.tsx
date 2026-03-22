@@ -193,7 +193,7 @@ const BookEventTickets: NextPageWithLayout<Props> = ({ selectedEvent: staticEven
                       <span className={`font-cooper font-bold ${
                         isSoldOut ? 'text-gray-400 text-xl' : isExclusive ? 'text-secondary text-2xl' : hasLeftAccent ? 'text-primary text-2xl' : 'text-primary text-xl'
                       }`}>
-                        €{tier.price} <span className="text-xs font-normal opacity-80">incl. tax</span>
+                        €{tier.price} <span className="text-xs font-normal opacity-80">incl. MwSt</span>
                       </span>
                       <span className={`text-xs uppercase tracking-widest transition-colors ${
                         isSoldOut
@@ -299,7 +299,7 @@ const BookEventTickets: NextPageWithLayout<Props> = ({ selectedEvent: staticEven
                   <p className="text-xs uppercase tracking-widest text-gray-500">{selectedEvent.name}</p>
                 </div>
                 <p className="font-cooper text-xl font-bold text-primary mt-1">
-                  {selectedTier.name} — €{selectedTier.price} <span className="text-sm font-normal opacity-80">incl. tax</span>
+                  {selectedTier.name} — €{selectedTier.price} <span className="text-sm font-normal opacity-80">incl. MwSt</span>
                 </p>
                 {selectedTier.benefits && selectedTier.benefits.length > 0 && (
                   <ul className="mt-3 space-y-2">
