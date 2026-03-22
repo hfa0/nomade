@@ -26,6 +26,7 @@ const Scan: NextPageWithLayout = () => {
   } | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const scannerRef = useRef<HTMLDivElement>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
   const html5QrCodeRef = useRef<any>(null);
 
   const { data: products = [], isLoading: productsLoading } = useQuery({
@@ -51,7 +52,7 @@ const Scan: NextPageWithLayout = () => {
         `/api/validate-ticket?ticketNumber=${encodeURIComponent(ticketNumber)}`,
       );
       const data = await res.json();
-      setLastResult({
+      const result = {
         valid: data.valid ?? false,
         ticketNumber: data.ticketNumber,
         orderNumber: data.orderNumber,
@@ -61,10 +62,13 @@ const Scan: NextPageWithLayout = () => {
         validatedAt: data.validatedAt,
         validatedMoreThan2MinAgo: data.validatedMoreThan2MinAgo,
         items: data.items,
-        error: data.error,
-      });
+        error: data.error ?? (!data.valid ? 'Invalid QR code' : undefined),
+      };
+      setLastResult(result);
+      setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
     } catch (err: any) {
-      setLastResult({ valid: false, error: err.message });
+      setLastResult({ valid: false, error: err.message || 'Invalid QR code' });
+      setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
     }
   }, []);
 
@@ -245,6 +249,7 @@ const Scan: NextPageWithLayout = () => {
 
         {lastResult && (
           <div
+            ref={resultRef}
             className={classNames(
               'w-full max-w-md p-5 rounded-xl border-2 text-center',
               lastResult.valid
@@ -278,7 +283,7 @@ const Scan: NextPageWithLayout = () => {
             ) : (
               <>
                 <p className="text-2xl font-bold mb-2">✗ Invalid</p>
-                <p className="text-sm">{lastResult.error || 'Ticket not found'}</p>
+                <p className="text-sm">{lastResult.error || 'Invalid QR code'}</p>
               </>
             )}
           </div>

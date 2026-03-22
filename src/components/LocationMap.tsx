@@ -3,7 +3,7 @@
 import { APIProvider, Map } from '@vis.gl/react-google-maps';
 import { useState, useEffect } from 'react';
 
-const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'AIzaSyAtxljZaaiTpnMm0IzdDe1LNmLJckA-EcI';
+const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
 
 const DEFAULT_CENTER = { lat: 51.2097, lng: 6.7825 };
 

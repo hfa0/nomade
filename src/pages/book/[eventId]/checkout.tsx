@@ -1,59 +1,40 @@
+import type { GetStaticPaths, GetStaticProps } from 'next';
 import type { NextPageWithLayout } from '../../_app';
 import Head from 'next/head';
 import MainLayout from '@/layouts/MainLayout';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useForm } from 'react-hook-form';
-import { useQuery } from '@tanstack/react-query';
-import Image from 'next/image';
-import type { BookableEvent, TicketTier } from '@/constants/events';
+import type { BookableEvent } from '@/constants/events';
 import { buildShopifyCheckoutUrl } from '@/utils/shopify';
-import { fetchShopifyProducts, type ShopifyProduct } from '@/utils/shopifyStorefront';
+import { fetchBookableEvents } from '@/utils/bookableEvents';
 import TicketIcon from '@/assets/svg/ticket.svg';
 
 const SHOPIFY_STORE = process.env.NEXT_PUBLIC_SHOPIFY_STORE || '';
 
-function mapProductToEvent(product: ShopifyProduct): BookableEvent {
-  return {
-    id: product.id,
-    handle: product.handle,
-    name: product.title,
-    date: product.metafields?.time?.value ?? '—',
-    location: product.metafields?.location?.value ?? 'Düsseldorf',
-    description: product.description ?? null,
-    image: product.featuredImage?.url ?? null,
-    ticketTiers: product.variants
-      .filter((v) => v.availableForSale)
-      .map((v) => ({
-        id: v.id,
-        name: v.title,
-        price: parseFloat(v.price),
-        shopifyVariantId: v.legacyResourceId,
-        benefits: v.benefits,
-      })),
-  };
-}
+type Props = { events: BookableEvent[] };
 
-async function fetchEvents(): Promise<BookableEvent[]> {
-  const products = await fetchShopifyProducts();
-  return products
-    .filter((p) => p.variants?.some((v) => v.availableForSale))
-    .map(mapProductToEvent);
-}
+export const getStaticPaths: GetStaticPaths = async () => {
+  const events = await fetchBookableEvents();
+  return {
+    paths: events.map((e) => ({ params: { eventId: e.handle } })),
+    fallback: false,
+  };
+};
+
+export const getStaticProps: GetStaticProps<Props> = async () => {
+  const events = await fetchBookableEvents();
+  return { props: { events } };
+};
 
 type FormData = {
   name: string;
   email: string;
 };
 
-const BookCheckout: NextPageWithLayout = () => {
+const BookCheckout: NextPageWithLayout<Props> = ({ events = [] }) => {
   const router = useRouter();
   const { eventId, variant } = router.query;
-
-  const { data: events = [], isLoading, error } = useQuery({
-    queryKey: ['shopify-products'],
-    queryFn: fetchEvents,
-  });
 
   const {
     register,
@@ -62,7 +43,7 @@ const BookCheckout: NextPageWithLayout = () => {
   } = useForm<FormData>();
 
   const variantId = typeof variant === 'string' ? variant : Array.isArray(variant) ? variant[0] : undefined;
-  const selectedEvent = events.find((e) => e.handle === eventId);
+  const selectedEvent = router.isReady ? events.find((e) => e.handle === eventId) : undefined;
   const selectedTier = selectedEvent?.ticketTiers.find(
     (t) => t.shopifyVariantId === variantId || t.id === variantId
   );
@@ -76,7 +57,7 @@ const BookCheckout: NextPageWithLayout = () => {
     window.location.href = url;
   };
 
-  if (!router.isReady || isLoading) {
+  if (!router.isReady) {
     return (
       <section className="pt-24 pb-16 md:pt-28 md:pb-24 px-6">
         <div className="max-w-2xl mx-auto text-center py-12 text-gray-500">
@@ -86,11 +67,13 @@ const BookCheckout: NextPageWithLayout = () => {
     );
   }
 
-  if (error || !selectedEvent || !selectedTier || !variantId) {
+  if (!selectedEvent || !selectedTier || !variantId || selectedTier.soldOut) {
     return (
       <section className="pt-24 pb-16 md:pt-28 md:pb-24 px-6">
         <div className="max-w-2xl mx-auto text-center py-12">
-          <p className="text-gray-600 mb-4">Invalid checkout. Please select a ticket.</p>
+          <p className="text-gray-600 mb-4">
+            {selectedTier?.soldOut ? 'This ticket tier is sold out. Please select another.' : 'Invalid checkout. Please select a ticket.'}
+          </p>
           <Link href={selectedEvent ? `/book/${selectedEvent.handle}` : '/book'} className="text-primary hover:underline">
             ← Back
           </Link>
@@ -121,7 +104,7 @@ const BookCheckout: NextPageWithLayout = () => {
               <p className="text-xs uppercase tracking-widest text-gray-500">{selectedEvent.name}</p>
             </div>
             <p className="font-cooper text-xl font-bold text-primary mt-1">
-              {selectedTier.name} — €{selectedTier.price}
+              {selectedTier.name} — €{selectedTier.price} <span className="text-sm font-normal opacity-80">incl. tax</span>
             </p>
             {selectedTier.benefits && selectedTier.benefits.length > 0 && (
               <ul className="mt-3 space-y-2">

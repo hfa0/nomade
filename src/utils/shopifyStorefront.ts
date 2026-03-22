@@ -87,7 +87,7 @@ export function parseMenuSections(value: string | null | undefined): MenuSection
 }
 
 const PRODUCTS_QUERY = `
-  query getProducts($first: Int!) {
+  query getProducts($first: Int!) @inContext(country: DE) {
     products(first: $first, query: "status:active") {
       edges {
         node {

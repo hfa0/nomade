@@ -1,17 +1,15 @@
+import type { GetStaticPaths, GetStaticProps } from 'next';
 import type { NextPageWithLayout } from '../../_app';
 import Head from 'next/head';
 import MainLayout from '@/layouts/MainLayout';
-import { useRouter } from 'next/router';
 import { useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
-import { useQuery } from '@tanstack/react-query';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'motion/react';
 import { Icon } from '@itsyouagency/ui';
 import type { BookableEvent, TicketTier } from '@/constants/events';
 import { buildShopifyCheckoutUrl } from '@/utils/shopify';
-import { fetchShopifyProducts, type ShopifyProduct } from '@/utils/shopifyStorefront';
-import { parseMenuSections } from '@/utils/shopifyStorefront';
+import { fetchBookableEvents } from '@/utils/bookableEvents';
 import TicketIcon from '@/assets/svg/ticket.svg';
 import LocationMap from '@/components/LocationMap';
 
@@ -19,46 +17,25 @@ const SHOPIFY_STORE = process.env.NEXT_PUBLIC_SHOPIFY_STORE || '';
 
 type FormData = { name: string; email: string };
 
-function mapProductToEvent(product: ShopifyProduct): BookableEvent {
+type Props = { events: BookableEvent[]; selectedEvent: BookableEvent | null };
+
+export const getStaticPaths: GetStaticPaths = async () => {
+  const events = await fetchBookableEvents();
   return {
-    id: product.id,
-    handle: product.handle,
-    name: product.title,
-    date: product.metafields?.time?.value ?? '—',
-    location: product.metafields?.location?.value ?? 'Düsseldorf',
-    fulllocation: product.metafields?.fulllocation?.value ?? null,
-    address: product.metafields?.address?.value ?? null,
-    menu: parseMenuSections(product.metafields?.menu?.value),
-    description: product.description ?? null,
-    image: product.featuredImage?.url ?? null,
-    ticketTiers: product.variants
-      .filter((v) => v.availableForSale)
-      .map((v) => ({
-        id: v.id,
-        name: v.title,
-        price: parseFloat(v.price),
-        shopifyVariantId: v.legacyResourceId,
-        benefits: v.benefits,
-      })),
+    paths: events.map((e) => ({ params: { eventId: e.handle } })),
+    fallback: false,
   };
-}
+};
 
-async function fetchEvents(): Promise<BookableEvent[]> {
-  const products = await fetchShopifyProducts();
-  return products
-    .filter((p) => p.variants?.some((v) => v.availableForSale))
-    .map(mapProductToEvent);
-}
+export const getStaticProps: GetStaticProps<Props> = async ({ params }) => {
+  const eventId = params?.eventId as string;
+  const events = await fetchBookableEvents();
+  const selectedEvent = events.find((e) => e.handle === eventId) ?? null;
+  return { props: { events, selectedEvent } };
+};
 
-const BookEventTickets: NextPageWithLayout = () => {
-  const router = useRouter();
-  const { eventId } = router.query;
+const BookEventTickets: NextPageWithLayout<Props> = ({ selectedEvent }) => {
   const [selectedTier, setSelectedTier] = useState<TicketTier | null>(null);
-
-  const { data: events = [], isLoading, error } = useQuery({
-    queryKey: ['shopify-products'],
-    queryFn: fetchEvents,
-  });
 
   const {
     register,
@@ -69,19 +46,7 @@ const BookEventTickets: NextPageWithLayout = () => {
 
   const closeSidebar = useCallback(() => setSelectedTier(null), []);
 
-  const selectedEvent = events.find((e) => e.handle === eventId);
-
-  if (!router.isReady || isLoading) {
-    return (
-      <section className="pt-24 pb-16 md:pt-28 md:pb-24 px-6">
-        <div className="max-w-2xl mx-auto text-center py-12 text-gray-500">
-          Loading…
-        </div>
-      </section>
-    );
-  }
-
-  if (error || !selectedEvent) {
+  if (!selectedEvent) {
     return (
       <section className="pt-24 pb-16 md:pt-28 md:pb-24 px-6">
         <div className="max-w-2xl mx-auto text-center py-12">
@@ -92,12 +57,13 @@ const BookEventTickets: NextPageWithLayout = () => {
   }
 
   const selectTier = (tier: TicketTier) => {
+    if (tier.soldOut) return;
     setSelectedTier(tier);
     reset();
   };
 
   const onSubmit = async (data: FormData) => {
-    if (!selectedTier || !SHOPIFY_STORE) return;
+    if (!selectedTier || selectedTier.soldOut || !SHOPIFY_STORE) return;
     const url = buildShopifyCheckoutUrl(SHOPIFY_STORE, selectedTier.shopifyVariantId, 1, {
       email: data.email,
     });
@@ -151,6 +117,7 @@ const BookEventTickets: NextPageWithLayout = () => {
               const hasLeftAccent = /basic|member|exclusive|premium|vip/i.test(tier.name);
               const isExclusive = /exclusive|premium|vip/i.test(tier.name);
               const isRecommended = /member/i.test(tier.name);
+              const isSoldOut = tier.soldOut;
               const prevTierBenefits = tierIndex > 0
                 ? (selectedEvent.ticketTiers[tierIndex - 1]?.benefits ?? [])
                 : [];
@@ -163,24 +130,32 @@ const BookEventTickets: NextPageWithLayout = () => {
                   <button
                     type="button"
                     onClick={() => selectTier(tier)}
-                    className={`relative flex-1 flex flex-col min-h-[320px] overflow-hidden rounded-xl border-2 transition-all duration-300 group text-left focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-offset-2 ${
-                    isExclusive
-                      ? 'border-secondary bg-gradient-to-br from-secondary/15 to-secondary/5 shadow-lg shadow-secondary/10 hover:shadow-xl hover:shadow-secondary/15 hover:border-secondary/90'
-                      : 'border-gray-200 bg-white hover:border-primary hover:shadow-md hover:shadow-primary/10'
+                    disabled={isSoldOut}
+                    className={`relative flex-1 flex flex-col min-h-[320px] overflow-hidden rounded-xl border-2 transition-all duration-300 group text-left focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-offset-2 disabled:cursor-not-allowed ${
+                    isSoldOut
+                      ? 'border-gray-200/60 bg-transparent opacity-50'
+                      : isExclusive
+                        ? 'border-secondary bg-gradient-to-br from-secondary/15 to-secondary/5 shadow-lg shadow-secondary/10 hover:shadow-xl hover:shadow-secondary/15 hover:border-secondary/90'
+                        : 'border-gray-200 bg-white hover:border-primary hover:shadow-md hover:shadow-primary/10'
                   }`}
                 >
-                  {hasLeftAccent && (
+                  {hasLeftAccent && !isSoldOut && (
                     <div className={`absolute left-0 top-0 bottom-0 w-1 ${isExclusive ? 'bg-secondary' : 'bg-primary'}`} aria-hidden />
                   )}
                   <div className={`flex flex-col h-full gap-4 ${hasLeftAccent ? 'p-6 pl-7' : 'p-6'}`}>
                     <div className="flex-1 min-w-0 min-h-0">
-                      <div className="flex items-center gap-3 mb-3">
+                      <div className="flex items-center gap-3 mb-3 flex-wrap">
                         <span className={`font-cooper text-lg font-bold transition-colors ${
-                          isExclusive ? 'text-secondary' : 'text-gray-900 group-hover:text-primary'
+                          isSoldOut ? 'text-gray-500' : isExclusive ? 'text-secondary' : 'text-gray-900 group-hover:text-primary'
                         }`}>
                           {tier.name}
                         </span>
-                        {isRecommended && (
+                        {isSoldOut && (
+                          <span className="inline-flex items-center text-[10px] uppercase tracking-[0.15em] font-bold text-gray-500 bg-gray-200 px-2.5 py-1 rounded-md">
+                            Sold out
+                          </span>
+                        )}
+                        {!isSoldOut && isRecommended && (
                           <span className="inline-flex items-center text-[10px] uppercase tracking-[0.15em] font-semibold text-primary bg-primary/15 px-2.5 py-1 rounded-md">
                             Recommended
                           </span>
@@ -201,13 +176,17 @@ const BookEventTickets: NextPageWithLayout = () => {
                       )}
                     </div>
                     <div className="flex flex-col gap-2 shrink-0 mt-auto pt-4 border-t border-gray-200">
-                      <span className={`font-cooper font-bold ${isExclusive ? 'text-secondary text-2xl' : hasLeftAccent ? 'text-primary text-2xl' : 'text-primary text-xl'}`}>
-                        €{tier.price}
+                      <span className={`font-cooper font-bold ${
+                        isSoldOut ? 'text-gray-400 text-xl' : isExclusive ? 'text-secondary text-2xl' : hasLeftAccent ? 'text-primary text-2xl' : 'text-primary text-xl'
+                      }`}>
+                        €{tier.price} <span className="text-xs font-normal opacity-80">incl. tax</span>
                       </span>
                       <span className={`text-xs uppercase tracking-widest transition-colors ${
-                        isExclusive ? 'text-secondary/80 group-hover:text-secondary' : hasLeftAccent ? 'text-primary/80 group-hover:text-primary' : 'text-gray-400 group-hover:text-primary'
+                        isSoldOut
+                          ? 'text-gray-400'
+                          : isExclusive ? 'text-secondary/80 group-hover:text-secondary' : hasLeftAccent ? 'text-primary/80 group-hover:text-primary' : 'text-gray-400 group-hover:text-primary'
                       }`}>
-                        Select →
+                        {isSoldOut ? 'Sold out' : 'Select →'}
                       </span>
                     </div>
                   </div>
@@ -305,7 +284,7 @@ const BookEventTickets: NextPageWithLayout = () => {
                   <p className="text-xs uppercase tracking-widest text-gray-500">{selectedEvent.name}</p>
                 </div>
                 <p className="font-cooper text-xl font-bold text-primary mt-1">
-                  {selectedTier.name} — €{selectedTier.price}
+                  {selectedTier.name} — €{selectedTier.price} <span className="text-sm font-normal opacity-80">incl. tax</span>
                 </p>
                 {selectedTier.benefits && selectedTier.benefits.length > 0 && (
                   <ul className="mt-3 space-y-2">

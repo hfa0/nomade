@@ -9,6 +9,7 @@ export type TicketTier = {
   price: number;
   shopifyVariantId: string;
   benefits?: string[];
+  soldOut?: boolean;
 };
 
 export type BookableEvent = {
@@ -23,6 +24,7 @@ export type BookableEvent = {
   description?: string | null;
   image?: string | null;
   ticketTiers: TicketTier[];
+  soldOut?: boolean;
 };
 
 export const BOOKABLE_EVENTS: BookableEvent[] = [
