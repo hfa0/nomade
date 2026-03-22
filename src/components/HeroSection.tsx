@@ -28,37 +28,12 @@ export default function HeroSection() {
             className="inline-block"
           />
         </h1>
-        <div className="space-y-4 p-4 text-light">
-          <motion.p
-            className="font-cooper text-xl md:text-2xl italic"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 1.2 }}
-          >
-            Where heritage meets the future
-          </motion.p>
-          <motion.p
-            className="font-cooper text-xl md:text-2xl italic"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 1.5 }}
-          >
-            Where fashion becomes art
-          </motion.p>
-          <motion.p
-            className="font-cooper text-xl md:text-2xl italic"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 1.8 }}
-          >
-            Where community creates movement
-          </motion.p>
-        </div>
+      
         <motion.div
           className="pt-6 flex flex-wrap justify-center gap-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 2.2 }}
+          transition={{ duration: 0.5, delay: 1 }}
         >
           <Link
             href={ROUTER.book.href}

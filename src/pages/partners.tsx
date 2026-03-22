@@ -2,6 +2,7 @@ import type { NextPageWithLayout } from './_app';
 import Head from 'next/head';
 import MainLayout from '@/layouts/MainLayout';
 import InViewAnimation from '@/components/InViewAnimation';
+import VisualBreakSection from '@/components/VisualBreakSection';
 
 const BENEFITS = [
   {
@@ -45,6 +46,9 @@ const Partners: NextPageWithLayout = () => {
         </div>
       </section>
 
+      {/* Brands */}
+      <VisualBreakSection />
+
       {/* Benefits */}
       <section className="py-20 md:py-28 px-6 bg-light">
         <div className="max-w-4xl mx-auto">
@@ -74,10 +78,10 @@ const Partners: NextPageWithLayout = () => {
             For sponsorship packages, collaborations and brand partnerships — we&apos;d love to hear from you.
           </p>
           <a
-            href="mailto:partner@nomade-prestige.de"
+            href="mailto:info@itsyouagency.net"
             className="inline-block px-10 py-4 bg-light text-primary font-medium uppercase tracking-widest text-sm hover:bg-white transition-colors"
           >
-            partner@nomade-prestige.de
+            info@itsyouagency.net
           </a>
         </InViewAnimation>
       </section>

@@ -26,7 +26,10 @@ export type ShopifyProduct = {
   featuredImage?: { url: string; altText?: string } | null;
   metafields?: {
     location?: { value: string } | null;
+    fulllocation?: { value: string } | null;
+    address?: { value: string } | null;
     time?: { value: string } | null;
+    menu?: { value: string } | null;
   };
   variants: ShopifyVariant[];
 };
@@ -46,6 +49,43 @@ function parseBenefitsList(value: string | null | undefined): string[] {
   }
 }
 
+export type MenuSection = {
+  section: string;
+  items: string[];
+};
+
+/**
+ * Parses menu data in format:
+ * Section: item1 | item2 | item3
+ * Supports multiline string or JSON array of lines.
+ */
+export function parseMenuSections(value: string | null | undefined): MenuSection[] {
+  if (!value?.trim()) return [];
+  let lines: string[];
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    lines = Array.isArray(parsed)
+      ? parsed.filter((x): x is string => typeof x === 'string').flatMap((s) => s.split('\n'))
+      : value.split('\n');
+  } catch {
+    lines = value.split('\n');
+  }
+  return lines
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const colonIndex = line.indexOf(': ');
+      if (colonIndex === -1) {
+        return { section: 'Menu', items: [line] };
+      }
+      const section = line.slice(0, colonIndex).trim();
+      const itemsStr = line.slice(colonIndex + 2).trim();
+      const items = itemsStr.split('|').map((s) => s.trim()).filter(Boolean);
+      return { section, items };
+    })
+    .filter((m) => m.items.length > 0);
+}
+
 const PRODUCTS_QUERY = `
   query getProducts($first: Int!) {
     products(first: $first, query: "status:active") {
@@ -62,7 +102,16 @@ const PRODUCTS_QUERY = `
           location: metafield(namespace: "custom", key: "location") {
             value
           }
+          fulllocation: metafield(namespace: "custom", key: "fulllocation") {
+            value
+          }
+          address: metafield(namespace: "custom", key: "address") {
+            value
+          }
           time: metafield(namespace: "custom", key: "time") {
+            value
+          }
+          menu: metafield(namespace: "custom", key: "menu") {
             value
           }
           variants(first: 20) {
@@ -133,7 +182,10 @@ export async function fetchShopifyProducts(
           description?: string | null;
           featuredImage?: { url: string; altText?: string } | null;
           location?: { value: string } | null;
+          fulllocation?: { value: string } | null;
+          address?: { value: string } | null;
           time?: { value: string } | null;
+          menu?: { value: string } | null;
           variants: {
             edges: Array<{
               node: {
@@ -159,7 +211,10 @@ export async function fetchShopifyProducts(
     featuredImage: product.featuredImage,
     metafields: {
       location: product.location,
+      fulllocation: product.fulllocation,
+      address: product.address,
       time: product.time,
+      menu: product.menu,
     },
     variants: product.variants.edges.map(({ node: v }) => ({
       id: v.id,

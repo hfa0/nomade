@@ -1,34 +1,37 @@
 import Image from 'next/image';
-import { motion, useInView } from 'motion/react';
-import { useRef } from 'react';
-import bg from '@/assets/img/bg.jpg';
+import ScrollBar from '@/components/ScrollBar';
+import anotonio from '@/assets/img/brands/anotonio.png';
+import babor from '@/assets/img/brands/babor.png';
+import fachingen from '@/assets/img/brands/fachingen.png';
+import itsyou from '@/assets/img/brands/itsyou.png';
+import sinalco from '@/assets/img/brands/sinalco.png';
+import xa from '@/assets/img/brands/xa.png';
+
+const BRAND_IMAGES = [
+  { src: anotonio, alt: 'Antonio' },
+  { src: babor, alt: 'Babor' },
+  { src: fachingen, alt: 'Fachingen' },
+  { src: itsyou, alt: "It's You" },
+  { src: sinalco, alt: 'Sinalco' },
+  { src: xa, alt: 'XA' },
+];
 
 export default function VisualBreakSection() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-50px' });
   return (
-    <section ref={ref} className="relative h-[50vh] min-h-[320px]">
-      <Image
-        src={bg}
-        alt=""
-        fill
-        className="object-cover"
-      />
-      <motion.div
-        className="absolute inset-0 bg-primary/40 flex items-center justify-center backdrop-blur-sm"
-        initial={{ opacity: 0 }}
-        animate={isInView ? { opacity: 1 } : {}}
-        transition={{ duration: 0.6 }}
-      >
-        <motion.p
-          className="font-cooper text-light text-2xl md:text-4xl font-bold uppercase tracking-widest"
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          Fashion · Art · Music
-        </motion.p>
-      </motion.div>
+    <section className="relative bg-primary ">
+    
+      <ScrollBar className="py-10 md:py-6" duplicate={4}>
+        {BRAND_IMAGES.map((brand, i) => (
+          <div key={i} className="relative h-12 md:h-16 w-24 md:w-32 shrink-0 flex items-center">
+            <Image
+              src={brand.src}
+              alt={brand.alt}
+              fill
+              className="object-contain"
+            />
+          </div>
+        ))}
+      </ScrollBar>
     </section>
   );
 }

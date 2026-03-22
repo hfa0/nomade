@@ -16,7 +16,7 @@ export default function Footer() {
         </div>
         <div className='flex justify-between items-center'>
           <p>
-            by{' '}
+            Design by{' '}
             <a
               href="https://itsyou.agency"
               target="_blank"

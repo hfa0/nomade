@@ -1,14 +1,14 @@
 import Image from 'next/image';
 import InViewAnimation from '@/components/InViewAnimation';
-import luxuryImg from '@/assets/img/believe/D7408376 1.png';
-import communityImg from '@/assets/img/believe/D7408654 1.png';
+import luxuryImg from '@/assets/img/believe/IKV04575 1.png';
+import communityImg from '@/assets/img/believe/IMG_4394 1.png';
 
 export default function BelieveSection() {
   return (
     <section className="py-20 md:py-28 px-6 bg-light">
       <div className="max-w-4xl mx-auto">
         <InViewAnimation>
-          <h2 className="font-cooper text-primary text-3xl md:text-4xl font-bold uppercase text-center mb-16">
+          <h2 className="font-cooper text-primary text-4xl md:text-5xl font-medium uppercase text-center mb-16">
             What We Believe
           </h2>
           <p className="text-gray-700 text-lg text-center mb-16 italic">

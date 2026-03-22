@@ -11,7 +11,9 @@ import { Icon } from '@itsyouagency/ui';
 import type { BookableEvent, TicketTier } from '@/constants/events';
 import { buildShopifyCheckoutUrl } from '@/utils/shopify';
 import { fetchShopifyProducts, type ShopifyProduct } from '@/utils/shopifyStorefront';
+import { parseMenuSections } from '@/utils/shopifyStorefront';
 import TicketIcon from '@/assets/svg/ticket.svg';
+import LocationMap from '@/components/LocationMap';
 
 const SHOPIFY_STORE = process.env.NEXT_PUBLIC_SHOPIFY_STORE || '';
 
@@ -24,6 +26,9 @@ function mapProductToEvent(product: ShopifyProduct): BookableEvent {
     name: product.title,
     date: product.metafields?.time?.value ?? '—',
     location: product.metafields?.location?.value ?? 'Düsseldorf',
+    fulllocation: product.metafields?.fulllocation?.value ?? null,
+    address: product.metafields?.address?.value ?? null,
+    menu: parseMenuSections(product.metafields?.menu?.value),
     description: product.description ?? null,
     image: product.featuredImage?.url ?? null,
     ticketTiers: product.variants
@@ -107,18 +112,18 @@ const BookEventTickets: NextPageWithLayout = () => {
       </Head>
 
       <section className="pt-0 pb-16 md:pb-24 px-6 overflow-x-hidden">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           {selectedEvent.image && (
             <div className="relative aspect-[5/2] w-screen max-w-none left-1/2 -translate-x-1/2 rounded-none mb-8 overflow-hidden">
               <Image
                 src={selectedEvent.image}
                 alt={selectedEvent.name}
                 fill
-                className="object-cover object-top"
+                className="object-cover object-center"
                 sizes="100vw"
               />
               <div className="absolute bottom-0 left-0 right-0 bg-light/90">
-                <div className="max-w-2xl mx-auto px-6 py-6">
+                <div className="max-w-5xl mx-auto px-6 py-6">
                   <p className="text-xs font-medium uppercase tracking-[0.2em] text-primary">
                     {selectedEvent.date} · {selectedEvent.location}
                   </p>
@@ -141,20 +146,24 @@ const BookEventTickets: NextPageWithLayout = () => {
           <h3 className="text-xs font-medium uppercase tracking-[0.2em] text-gray-500 mb-4">
             Select ticket tier
           </h3>
-          <div className="space-y-4">
-            {selectedEvent.ticketTiers.map((tier) => {
+          <div className="flex flex-row gap-4 overflow-x-auto pb-2 items-stretch">
+            {selectedEvent.ticketTiers.map((tier, tierIndex) => {
               const hasLeftAccent = /basic|member|exclusive|premium|vip/i.test(tier.name);
               const isExclusive = /exclusive|premium|vip/i.test(tier.name);
               const isRecommended = /member/i.test(tier.name);
+              const prevTierBenefits = tierIndex > 0
+                ? (selectedEvent.ticketTiers[tierIndex - 1]?.benefits ?? [])
+                : [];
+              const isNewBenefit = (b: string) => tierIndex > 0 && !prevTierBenefits.includes(b);
               return (
-                <div key={tier.id} className="flex gap-4 items-stretch">
-                  <div className="flex items-center justify-center w-12 shrink-0 text-primary">
+                <div key={tier.id} className="flex flex-col w-[280px] min-w-[280px] shrink-0">
+                  <div className="flex items-center justify-center py-3 text-primary">
                     <TicketIcon className="w-8 h-8" aria-hidden />
                   </div>
                   <button
                     type="button"
                     onClick={() => selectTier(tier)}
-                    className={`relative flex-1 overflow-hidden rounded-xl border-2 transition-all duration-300 group text-left focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-offset-2 ${
+                    className={`relative flex-1 flex flex-col min-h-[320px] overflow-hidden rounded-xl border-2 transition-all duration-300 group text-left focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-offset-2 ${
                     isExclusive
                       ? 'border-secondary bg-gradient-to-br from-secondary/15 to-secondary/5 shadow-lg shadow-secondary/10 hover:shadow-xl hover:shadow-secondary/15 hover:border-secondary/90'
                       : 'border-gray-200 bg-white hover:border-primary hover:shadow-md hover:shadow-primary/10'
@@ -163,8 +172,8 @@ const BookEventTickets: NextPageWithLayout = () => {
                   {hasLeftAccent && (
                     <div className={`absolute left-0 top-0 bottom-0 w-1 ${isExclusive ? 'bg-secondary' : 'bg-primary'}`} aria-hidden />
                   )}
-                  <div className={`flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 ${hasLeftAccent ? 'p-6 pl-7' : 'p-6'}`}>
-                    <div className="flex-1 min-w-0">
+                  <div className={`flex flex-col h-full gap-4 ${hasLeftAccent ? 'p-6 pl-7' : 'p-6'}`}>
+                    <div className="flex-1 min-w-0 min-h-0">
                       <div className="flex items-center gap-3 mb-3">
                         <span className={`font-cooper text-lg font-bold transition-colors ${
                           isExclusive ? 'text-secondary' : 'text-gray-900 group-hover:text-primary'
@@ -179,16 +188,19 @@ const BookEventTickets: NextPageWithLayout = () => {
                       </div>
                       {tier.benefits && tier.benefits.length > 0 && (
                         <ul className="space-y-2">
-                          {tier.benefits.map((b, i) => (
-                            <li key={i} className={`flex items-center gap-3 text-sm ${hasLeftAccent ? 'text-gray-700' : 'text-gray-600'}`}>
-                              <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" aria-hidden />
-                              <span>{b}</span>
-                            </li>
-                          ))}
+                          {tier.benefits.map((b, i) => {
+                            const isNew = isNewBenefit(b);
+                            return (
+                              <li key={i} className={`flex items-center gap-3 text-sm ${hasLeftAccent ? 'text-gray-700' : 'text-gray-600'}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isNew ? (isExclusive ? 'bg-secondary' : 'bg-primary') : 'bg-gray-300'}`} aria-hidden />
+                                <span className={isNew ? 'font-semibold' : ''}>{b}</span>
+                              </li>
+                            );
+                          })}
                         </ul>
                       )}
                     </div>
-                    <div className="flex items-center gap-4 shrink-0">
+                    <div className="flex flex-col gap-2 shrink-0 mt-auto pt-4 border-t border-gray-200">
                       <span className={`font-cooper font-bold ${isExclusive ? 'text-secondary text-2xl' : hasLeftAccent ? 'text-primary text-2xl' : 'text-primary text-xl'}`}>
                         €{tier.price}
                       </span>
@@ -204,6 +216,50 @@ const BookEventTickets: NextPageWithLayout = () => {
               );
             })}
           </div>
+
+          {(selectedEvent.fulllocation || (selectedEvent.menu && selectedEvent.menu.length > 0)) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-10 mt-10 mb-8">
+              {selectedEvent.menu && selectedEvent.menu.length > 0 && (
+                <div className="flex items-start gap-3">
+                  <Icon name="Dish" size={20} className="text-primary shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium uppercase tracking-[0.15em] text-gray-500 mb-3">Menu</p>
+                    <div className="space-y-4">
+                      {selectedEvent.menu.map((group, gi) => (
+                        <div key={gi}>
+                          <p className="text-sm font-semibold text-primary mb-1.5">{group.section}</p>
+                          <ul className="space-y-1">
+                            {group.items.map((item, ii) => (
+                              <li key={ii} className="text-gray-700 text-sm flex items-center gap-2">
+                                <span className="w-1 h-1 rounded-full bg-primary/60 shrink-0" aria-hidden />
+                                {item}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+              {selectedEvent.fulllocation && (
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-start gap-3">
+                    <Icon name="Marker" size={20} className="text-primary shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-[0.15em] text-gray-500 mb-1">Location</p>
+                      <p className="text-gray-700 text-sm">{selectedEvent.fulllocation}</p>
+                    </div>
+                  </div>
+                  <LocationMap
+                    className="rounded-lg overflow-hidden border border-gray-200"
+                    height={200}
+                    address={selectedEvent.address ?? selectedEvent.fulllocation}
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </section>
 

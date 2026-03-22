@@ -17,6 +17,9 @@ export type BookableEvent = {
   name: string;
   date: string;
   location: string;
+  fulllocation?: string | null;
+  address?: string | null;
+  menu?: Array<{ section: string; items: string[] }>;
   description?: string | null;
   image?: string | null;
   ticketTiers: TicketTier[];

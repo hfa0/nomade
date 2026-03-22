@@ -37,3 +37,18 @@ h4 {
 p {
   @apply font-light;
 }
+
+/* Slick slider overrides */
+.vision-slider .slick-prev,
+.vision-slider .slick-next {
+  z-index: 10;
+}
+.vision-slider .slick-prev {
+  left: 0;
+}
+.vision-slider .slick-next {
+  right: 0;
+}
+.vision-slider .slick-dots li button:before {
+  font-size: 10px;
+}
