@@ -4,6 +4,7 @@ import MainLayout from '@/layouts/MainLayout';
 import Link from 'next/link';
 import { ROUTER } from '@/constants/router';
 import Image from 'next/image';
+import { useQuery } from '@tanstack/react-query';
 import type { BookableEvent } from '@/constants/events';
 import { fetchBookableEvents } from '@/utils/bookableEvents';
 import TicketIcon from '@/assets/svg/ticket.svg';
@@ -15,7 +16,13 @@ export async function getStaticProps() {
   return { props: { events } };
 }
 
-const BookIndex: NextPageWithLayout<Props> = ({ events = [] }) => {
+const BookIndex: NextPageWithLayout<Props> = ({ events: staticEvents = [] }) => {
+  const { data: events = staticEvents } = useQuery({
+    queryKey: ['bookable-events-availability'],
+    queryFn: fetchBookableEvents,
+    initialData: staticEvents,
+    staleTime: 60 * 1000,
+  });
 
   return (
     <>

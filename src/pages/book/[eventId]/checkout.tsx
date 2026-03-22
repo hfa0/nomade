@@ -5,6 +5,7 @@ import MainLayout from '@/layouts/MainLayout';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useForm } from 'react-hook-form';
+import { useQuery } from '@tanstack/react-query';
 import type { BookableEvent } from '@/constants/events';
 import { buildShopifyCheckoutUrl } from '@/utils/shopify';
 import { fetchBookableEvents } from '@/utils/bookableEvents';
@@ -32,9 +33,16 @@ type FormData = {
   email: string;
 };
 
-const BookCheckout: NextPageWithLayout<Props> = ({ events = [] }) => {
+const BookCheckout: NextPageWithLayout<Props> = ({ events: staticEvents = [] }) => {
   const router = useRouter();
   const { eventId, variant } = router.query;
+
+  const { data: events = staticEvents } = useQuery({
+    queryKey: ['bookable-events-availability'],
+    queryFn: fetchBookableEvents,
+    initialData: staticEvents,
+    staleTime: 60 * 1000,
+  });
 
   const {
     register,

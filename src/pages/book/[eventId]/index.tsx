@@ -2,8 +2,9 @@ import type { GetStaticPaths, GetStaticProps } from 'next';
 import type { NextPageWithLayout } from '../../_app';
 import Head from 'next/head';
 import MainLayout from '@/layouts/MainLayout';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
+import { useQuery } from '@tanstack/react-query';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'motion/react';
 import { Icon } from '@itsyouagency/ui';
@@ -35,8 +36,20 @@ export const getStaticProps: GetStaticProps<Props> = async ({ params }) => {
   return { props: { events, selectedEvent } };
 };
 
-const BookEventTickets: NextPageWithLayout<Props> = ({ selectedEvent }) => {
+const BookEventTickets: NextPageWithLayout<Props> = ({ selectedEvent: staticEvent }) => {
   const [selectedTier, setSelectedTier] = useState<TicketTier | null>(null);
+
+  const { data: events = [] } = useQuery({
+    queryKey: ['bookable-events-availability'],
+    queryFn: fetchBookableEvents,
+    staleTime: 60 * 1000,
+  });
+
+  const selectedEvent = useMemo(() => {
+    if (!staticEvent) return null;
+    const fresh = events.find((e) => e.handle === staticEvent.handle);
+    return fresh ?? staticEvent;
+  }, [staticEvent, events]);
 
   const {
     register,
@@ -47,7 +60,7 @@ const BookEventTickets: NextPageWithLayout<Props> = ({ selectedEvent }) => {
 
   const closeSidebar = useCallback(() => setSelectedTier(null), []);
 
-  if (!selectedEvent) {
+  if (!staticEvent || !selectedEvent) {
     return (
       <section className="pt-24 pb-16 md:pt-28 md:pb-24 px-6">
         <div className="max-w-2xl mx-auto text-center py-12">
