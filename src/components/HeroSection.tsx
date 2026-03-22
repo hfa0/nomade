@@ -42,10 +42,10 @@ export default function HeroSection() {
             Buy ticket
           </Link>
           <Link
-            href={ROUTER.gallery.href}
+            href={ROUTER.locations.href}
             className="inline-block px-8 py-3 border-2 border-light text-light font-medium uppercase tracking-widest text-sm hover:bg-light hover:text-primary transition-colors"
           >
-            View gallery
+            View locations
           </Link>
         </motion.div>
       </div>
