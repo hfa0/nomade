@@ -14,6 +14,7 @@ import TicketIcon from '@/assets/svg/ticket.svg';
 import LocationMap from '@/components/LocationMap';
 
 const SHOPIFY_STORE = process.env.NEXT_PUBLIC_SHOPIFY_STORE || '';
+const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
 
 type FormData = { name: string; email: string };
 
@@ -231,6 +232,7 @@ const BookEventTickets: NextPageWithLayout<Props> = ({ selectedEvent }) => {
                     </div>
                   </div>
                   <LocationMap
+                    apiKey={GOOGLE_MAPS_API_KEY}
                     className="rounded-lg overflow-hidden border border-gray-200"
                     height={200}
                     address={selectedEvent.address ?? selectedEvent.fulllocation}
