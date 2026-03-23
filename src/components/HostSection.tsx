@@ -13,7 +13,7 @@ export default function HostSection() {
           </h2>
           <div className="space-y-6">
             <p className="text-light/95 text-lg leading-relaxed">
-              NOMADE. PRESTIGE is proudly hosted by I.T.S You Agency and Xatuna Amoyan — two forces at the intersection of culture, identity, and elevated experiences.
+              NOMADE. PRESTIGE is proudly hosted by IT'S You Agency and Xatuna Amoyan — two forces at the intersection of culture, identity, and elevated experiences.
             </p>
             <p className="text-light/80 text-base italic">
               Together we create spaces where heritage meets the future, and community finds its stage.
