@@ -3,6 +3,7 @@ import Head from 'next/head';
 import MainLayout from '@/layouts/MainLayout';
 import HeroSection from '@/components/HeroSection';
 import VisionSection from '@/components/VisionSection';
+import HostSection from '@/components/HostSection';
 import VisualBreakSection from '@/components/VisualBreakSection';
 import BelieveSection from '@/components/BelieveSection';
 import ConceptSection from '@/components/ConceptSection';
@@ -18,6 +19,7 @@ const Home: NextPageWithLayout = () => {
       </Head>
 
       <HeroSection />
+      <HostSection />
       <VisionSection />
       <VisualBreakSection />
       <BelieveSection />
