@@ -3,14 +3,18 @@ import InViewAnimation from '@/components/InViewAnimation';
 import Slider from '@/components/Slider';
 import vision1 from '@/assets/img/vision/D7409392.png';
 import vision2 from '@/assets/img/vision/IKV04000.png';
-import vision3 from '@/assets/img/vision/IKV04464.png';
-import vision4 from '@/assets/img/vision/IKV04525.png';
+import vision3 from '@/assets/img/vision/IKV04247.png';
+import vision4 from '@/assets/img/vision/IKV04305.png';
+import vision5 from '@/assets/img/vision/IKV04464.png';
+import vision6 from '@/assets/img/vision/IKV04525.png';
 
 const VISION_IMAGES = [
   { src: vision1, alt: 'NOMADE. PRESTIGE vision' },
   { src: vision2, alt: 'NOMADE. PRESTIGE vision' },
   { src: vision3, alt: 'NOMADE. PRESTIGE vision' },
   { src: vision4, alt: 'NOMADE. PRESTIGE vision' },
+  { src: vision5, alt: 'NOMADE. PRESTIGE vision' },
+  { src: vision6, alt: 'NOMADE. PRESTIGE vision' },
 ];
 
 export default function VisionSection() {
