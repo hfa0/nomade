@@ -15,7 +15,7 @@ const Home: NextPageWithLayout = () => {
     <>
       <Head>
         <title>NOMADE. PRESTIGE — Cultural Luxury Platform · Düsseldorf</title>
-        <meta name="description" content="NOMADE. PRESTIGE — Die kulturelle Luxusplattform für Düsseldorf. Wo High Fashion, orientalisches Erbe und zeitgenössische Ästhetik zu unvergesslichen Momenten verschmelzen." />
+        <meta name="description" content="NOMADE. PRESTIGE — The cultural luxury platform for Düsseldorf. Where high fashion, oriental heritage and contemporary aesthetics merge into unforgettable moments." />
       </Head>
 
       <HeroSection />
